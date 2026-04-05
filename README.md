@@ -12,13 +12,12 @@ Web-based flasher for Brightway and LEQI scooter controllers over UART — runs 
 
 ## How to use
 
-1. Download `bw-flasher-web.html`
-2. Open it in Chrome, Edge, or Opera
-3. Connect your USB-UART adapter
-4. Select a firmware file (`.bin`)
-5. Click **Connect** and then **Flash Firmware**
+1. Open https://amongus987.github.io/bw-flasher-web/ in Chrome, Edge, or Opera
+2. Connect your USB-UART adapter
+3. Select a firmware file (`.bin`)
+4. Click **Connect** and then **Flash Firmware**
 
-No Python, no pip, no installation. One file.
+No Python, no pip, no installation. One page.
 
 ---
 

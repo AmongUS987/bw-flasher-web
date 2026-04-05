@@ -1,4 +1,4 @@
-# DO NOT USE IT FOR NOW !!!
+# DO NOT USE IT FOR NOW !!! I DON'T KNOW IF IT WORKS
 
 # bw-flasher-web
 Flashing Brightway and LEQI scooter controllers using UART.

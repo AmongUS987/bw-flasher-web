@@ -4,6 +4,8 @@
 
 Web-based flasher for Brightway and LEQI scooter controllers over UART — runs entirely in the browser, no installation required.
 
+![Screenshot](resources/screenshot_v0.5.3.png)
+
 > Ported from [bw-flasher](https://github.com/scooterteam/bw-flasher) by ScooterTeam
 
 ---

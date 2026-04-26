@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BW Flasher Web v0.6.0</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#0b0d0f;--bg1:#111418;--bg2:#191d22;--bg3:#22272e;
+  --border:#2d333b;--border-hi:#444c56;
+  --amber:#e8a336;--amber-lo:#b07a1a;--amber-hi:#f5c05a;
+  --green:#4fca6a;--red:#f47067;--blue:#6cb6ff;--muted:#768390;
+  --text:#cdd9e5;--text-lo:#7d8590;
+  --font:'JetBrains Mono',monospace;
+  --glow-amber:0 0 8px rgba(232,163,54,0.4);
+  --glow-green:0 0 8px rgba(79,202,106,0.4);
+}
+html,body{height:100%;background:var(--bg0);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.5}
+body{display:flex;flex-direction:column;min-height:100vh;max-width:960px;margin:0 auto;padding:0 12px}
+
+/* ── Header ── */
+header{display:flex;align-items:center;gap:12px;padding:16px 0 10px;border-bottom:1px solid var(--border)}
+.logo{font-size:18px;font-weight:700;color:var(--amber);letter-spacing:-0.5px;text-shadow:var(--glow-amber)}
+.logo span{color:var(--text-lo);font-weight:300}
+.ver-tag{font-size:10px;color:var(--text-lo);background:var(--bg3);padding:2px 7px;border-radius:3px;border:1px solid var(--border)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-lo)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);transition:all 0.3s}
+.dot.ok{background:var(--green);border-color:var(--green);box-shadow:var(--glow-green)}
+.dot.warn{background:var(--amber);border-color:var(--amber);box-shadow:var(--glow-amber)}
+.dot.err{background:var(--red);border-color:var(--red)}
+
+/* ── Panels ── */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 0}
+.panel{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:12px}
+.panel-wide{grid-column:1/-1}
+.panel-label{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--amber);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.panel-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Form controls ── */
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.field:last-child{margin-bottom:0}
+label{font-size:10px;color:var(--text-lo);letter-spacing:0.5px;text-transform:uppercase}
+input[type=text],input[type=file],select{
+  width:100%;background:var(--bg2);border:1px solid var(--border);
+  color:var(--text);font-family:var(--font);font-size:12px;
+  padding:6px 8px;border-radius:4px;outline:none;transition:border 0.2s
+}
+input[type=text]:focus,select:focus{border-color:var(--amber)}
+input[type=file]{cursor:pointer;padding:5px 8px}
+input[type=file]::file-selector-button{
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  font-family:var(--font);font-size:11px;padding:3px 8px;border-radius:3px;
+  cursor:pointer;margin-right:8px;transition:all 0.2s
+}
+input[type=file]::file-selector-button:hover{border-color:var(--amber);color:var(--amber)}
+
+.checkbox-row{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:4px 0}
+.checkbox-row input[type=checkbox]{
+  appearance:none;width:14px;height:14px;background:var(--bg2);
+  border:1px solid var(--border);border-radius:2px;cursor:pointer;
+  position:relative;transition:all 0.2s;flex-shrink:0
+}
+.checkbox-row input[type=checkbox]:checked{background:var(--amber);border-color:var(--amber)}
+.checkbox-row input[type=checkbox]:checked::after{
+  content:'✓';position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;color:#000;font-size:10px;font-weight:700
+}
+.checkbox-row span{font-size:12px;color:var(--text)}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  font-family:var(--font);font-size:12px;font-weight:500;
+  padding:7px 14px;border-radius:4px;cursor:pointer;transition:all 0.2s;
+  text-transform:uppercase;letter-spacing:0.5px
+}
+.btn:hover{border-color:var(--amber);color:var(--amber)}
+.btn:active{background:var(--bg0)}
+.btn:disabled{opacity:0.35;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:rgba(232,163,54,0.12);border-color:var(--amber);color:var(--amber)}
+.btn-primary:hover{background:rgba(232,163,54,0.2);box-shadow:var(--glow-amber)}
+.btn-danger{background:rgba(244,112,103,0.1);border-color:var(--red);color:var(--red)}
+.btn-danger:hover{background:rgba(244,112,103,0.2)}
+.btn-success{background:rgba(79,202,106,0.1);border-color:var(--green);color:var(--green)}
+.btn-success:hover{background:rgba(79,202,106,0.2)}
+.btn-sm{font-size:11px;padding:5px 10px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── Connection area ── */
+.conn-status{display:flex;align-items:center;gap:8px;padding:8px 10px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:4px;
+  font-size:11px;color:var(--text-lo);margin-bottom:10px}
+.conn-status .dot{flex-shrink:0}
+#connStatusText{flex:1}
+
+/* ── Firmware info ── */
+.fw-info{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;
+  font-size:11px;background:var(--bg2);padding:8px 10px;border-radius:4px;margin-top:8px}
+.fw-info .k{color:var(--text-lo)}
+.fw-info .v{color:var(--amber);font-weight:500}
+.fw-info .v.ok{color:var(--green)}
+.fw-info .v.unk{color:var(--red)}
+
+/* ── Progress ── */
+.progress-wrap{grid-column:1/-1;margin-top:4px}
+.progress-bar-outer{height:18px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:3px;overflow:hidden;position:relative}
+.progress-bar-inner{height:100%;background:linear-gradient(90deg,var(--amber-lo),var(--amber));
+  width:0%;transition:width 0.3s ease;position:relative}
+.progress-bar-inner::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+  animation:shimmer 1.5s infinite;display:none
+}
+.progress-bar-inner.active::after{display:block}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;
+  color:var(--text-lo);margin-bottom:4px}
+#progressPct{color:var(--amber);font-weight:500}
+
+/* ── Log ── */
+.log-wrap{grid-column:1/-1;margin-top:4px}
+#log{
+  height:240px;background:var(--bg0);border:1px solid var(--border);
+  border-radius:4px;padding:10px;overflow-y:auto;font-size:11px;
+  line-height:1.6;position:relative
+}
+#log .line{display:flex;gap:6px}
+#log .ts{color:var(--text-lo);flex-shrink:0;user-select:none;font-size:10px}
+#log .msg{word-break:break-all}
+#log .msg.ok{color:var(--green)}
+#log .msg.err{color:var(--red)}
+#log .msg.warn{color:var(--amber)}
+#log .msg.info{color:var(--blue)}
+#log .msg.dbg{color:var(--text-lo);font-size:10px}
+#log .msg.tx{color:#9e7cb0}
+#log .msg.rx{color:#5b99c9}
+#log::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 24px,rgba(255,255,255,0.012) 24px,rgba(255,255,255,0.012) 25px)}
+.log-ctrl{display:flex;justify-content:flex-end;margin-bottom:6px}
+
+/* ── Status badge ── */
+.status-badge{display:inline-flex;align-items:center;gap:5px;
+  padding:3px 8px;border-radius:3px;font-size:10px;font-weight:600;
+  letter-spacing:0.5px;text-transform:uppercase}
+.status-badge.idle{background:rgba(45,51,59,0.8);color:var(--text-lo);border:1px solid var(--border)}
+.status-badge.running{background:rgba(232,163,54,0.15);color:var(--amber);border:1px solid var(--amber-lo)}
+.status-badge.done{background:rgba(79,202,106,0.12);color:var(--green);border:1px solid #2a6b39}
+.status-badge.error{background:rgba(244,112,103,0.12);color:var(--red);border:1px solid #7a3530}
+
+/* ── Section divider ── */
+.section-row{display:flex;align-items:center;gap:10px;grid-column:1/-1;padding:6px 0 0}
+.section-row h3{font-size:10px;font-weight:700;color:var(--text-lo);text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+.section-row hr{flex:1;border:none;border-top:1px solid var(--border)}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg0)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-hi)}
+
+/* ── Alert ── */
+.alert{padding:8px 12px;border-radius:4px;font-size:11px;grid-column:1/-1;margin-top:4px;display:none}
+.alert.warn{background:rgba(232,163,54,0.1);border:1px solid var(--amber-lo);color:var(--amber)}
+.alert.info{background:rgba(108,182,255,0.08);border:1px solid #3a6a9e;color:var(--blue)}
+.alert.show{display:block}
+
+footer{margin-top:auto;padding:12px 0;font-size:10px;color:var(--text-lo);
+  border-top:1px solid var(--border);display:flex;justify-content:space-between}
+footer a{color:var(--amber-lo);text-decoration:none}
+footer a:hover{color:var(--amber)}
+
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr}
+  .panel-wide,.progress-wrap,.log-wrap,.section-row,.alert{grid-column:1}
+}
+
+/* ── CRT effects ── */
+body::before {
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:9998;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.18) 2px,
+    rgba(0,0,0,0.18) 4px
+  );
+}
+body::after {
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:9997;
+  background:radial-gradient(ellipse at center,
+    transparent 60%,
+    rgba(0,0,0,0.55) 100%
+  );
+}
+/* Moving phosphor scanline */
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+#crtScanline {
+  position:fixed;left:0;right:0;height:3px;
+  background:linear-gradient(transparent, rgba(180,255,220,0.07), transparent);
+  pointer-events:none;z-index:9997;
+  animation:scanline 6s linear infinite;
+}
+/* Subtle flicker */
+@keyframes flicker {
+  0%,100%{opacity:1} 92%{opacity:1} 93%{opacity:0.96} 94%{opacity:1} 97%{opacity:0.98}
+}
+body { animation: flicker 8s infinite; }
+
+/* Knight Rider banner */
+.logo { position:relative; overflow:hidden; }
+@keyframes knightRider {
+  0%   { left:-40%; }
+  50%  { left:120%; }
+  50.001% { left:120%; }
+  100% { left:-40%; }
+}
+.logo::after {
+  content:'';
+  position:absolute;top:0;bottom:0;width:40%;
+  background:linear-gradient(90deg,transparent,rgba(232,163,54,0.35),transparent);
+  animation:knightRider 3s ease-in-out infinite;
+  pointer-events:none;
+}
+
+</style>
+</head>
+<body>
+
+
+<div id="crtScanline"></div>
+<!-- Disclaimer Modal -->
+<div id="disclaimerOverlay" style="
+  position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;
+  display:flex;align-items:center;justify-content:center;padding:16px">
+  <div style="
+    background:var(--bg1);border:1px solid var(--amber-lo);border-radius:8px;
+    max-width:560px;width:100%;padding:24px;font-family:var(--font)">
+    <div style="font-size:15px;font-weight:700;color:var(--amber);margin-bottom:14px">
+      ⚠️ Important Legal Notice
+    </div>
+    <div style="font-size:11px;color:var(--text);line-height:1.7">
+      <p style="margin-bottom:8px"><strong>This tool is for EDUCATIONAL and RESEARCH purposes only.</strong></p>
+      <p style="margin-bottom:8px"><strong>YOU OWN WHAT YOU BUY:</strong> This tool helps you understand and modify devices you own.
+      However, modifications may be dangerous and illegal.</p>
+      <p style="color:var(--red);margin-bottom:6px"><strong>Safety Warnings:</strong></p>
+      <ul style="margin:0 0 10px 18px">
+        <li>May void your warranty</li>
+        <li>May violate local laws and regulations</li>
+        <li>Modified devices may be illegal to operate</li>
+        <li>YOU assume ALL liability for injuries, accidents, and legal consequences</li>
+      </ul>
+      <p style="margin-bottom:8px"><strong>No Commercial Use:</strong> This software is CC-BY-NC-SA licensed.
+      Commercial use is strictly prohibited.</p>
+      <p><strong>No Warranty:</strong> Provided AS-IS with no guarantees. Authors accept NO liability.</p>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end">
+      <button onclick="document.getElementById('disclaimerOverlay').remove();UI._checkUpdate();Chiptune.start();document.getElementById('btnMusic').textContent='♫';document.getElementById('btnMusic').style.color='var(--amber)'" class="btn btn-primary" style="min-width:90px">Accept</button>
+      <button onclick="document.getElementById('disclaimerOverlay').innerHTML='<div style=color:var(--red);font-size:13px;font-family:var(--font);padding:40px>Closed. Reload to use.</div>'" class="btn btn-danger" style="min-width:90px">Exit</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">BW<span>Flasher</span> Web</div>
+  <div class="ver-tag">v0.6.0</div>
+  <div class="header-right">
+    <input type="file" id="inputMusicFile" accept=".mp3,audio/*" style="display:none">
+    <button class="btn btn-sm" id="btnMusic" title="Toggle music (right-click to load MP3 file)" style="min-width:36px;padding:5px 8px" oncontextmenu="event.preventDefault();document.getElementById('inputMusicFile').click()">♪</button>
+    <div id="flashStatus" class="status-badge idle">● IDLE</div>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- Connection -->
+  <div class="panel">
+    <div class="panel-label">Connection</div>
+    <div class="conn-status">
+      <div class="dot" id="connDot"></div>
+      <span id="connStatusText">Not connected</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" id="btnWebSerial" title="Requires Chrome/Edge desktop with OS driver for CH340/FT232/CP2102">⚡ Web Serial</button>
+      <button class="btn btn-sm" id="btnWebUSB" title="Experimental: direct CH340 driver via WebUSB (works on Android)">🔌 WebUSB</button>
+      <button class="btn btn-sm btn-danger" id="btnDisconnect" disabled>✕ Disconnect</button>
+    </div>
+    <div style="margin-top:8px" class="btn-row">
+      <button class="btn btn-sm" id="btnTestConn" disabled>🔍 Test Connection</button>
+    </div>
+    <div class="alert info" id="alertWebApi">
+      <strong>WebUSB mode</strong> obsługuje CH340/CH341A, FT232R, CP210x, PL2303.
+      <strong>Android:</strong> podłącz adapter OTG → kliknij WebUSB.
+      <strong>Windows:</strong> jeśli błąd — zamień sterownik na WinUSB przez
+      <a href="https://zadig.akeo.ie/" target="_blank" style="color:inherit">Zadig</a>.
+    </div>
+  </div>
+
+  <!-- Firmware -->
+  <div class="panel">
+    <div class="panel-label">Firmware</div>
+    <div class="field">
+      <label>Firmware file (.bin / .zip / .enc)</label>
+      <input type="file" id="fwFile" accept=".bin,.zip,.enc,.BIN,.ZIP">
+    </div>
+    <div id="fwInfoBox" class="fw-info" style="display:none"></div>
+  </div>
+
+  <!-- Options -->
+  <div class="panel">
+    <div class="panel-label">Options</div>
+    <label class="checkbox-row">
+      <input type="checkbox" id="chkSim">
+      <span>Simulation mode (no hardware needed)</span>
+    </label>
+    <label class="checkbox-row">
+      <input type="checkbox" id="chkDebug">
+      <span>Debug output (verbose TX/RX logging)</span>
+    </label>
+  </div>
+
+  <!-- Actions -->
+  <div class="panel">
+    <div class="panel-label">Actions</div>
+    <div class="btn-row">
+      <button class="btn btn-success" id="btnFlash" disabled>⚡ Flash Firmware</button>
+      <button class="btn btn-danger btn-sm" id="btnAbort" disabled>■ Abort</button>
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text-lo)">
+      Baud: 19200 · 8N1 · No flow control
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="progressStatus">Ready</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar-outer">
+      <div class="progress-bar-inner" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="log-wrap">
+    <div class="log-ctrl">
+      <button class="btn btn-sm" id="btnClearLog">Clear</button>
+    </div>
+    <div id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  <span>BW Flasher Web — ScooterTeam © 2024-2025 — <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span>
+  <span>Chrome / Edge / Opera required · <a href="https://github.com/scooterteam/bw-flasher" target="_blank">GitHub</a></span>
+</footer>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CRC UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** CRC-16/XMODEM (poly=0x1021, init=0, no reflection) — same as Python's crc_hqx(data, 0x0) */
+function crc16(data, init = 0) {
+  let crc = init & 0xFFFF;
+  for (const b of data) {
+    crc ^= b << 8;
+    for (let i = 0; i < 8; i++) {
+      crc = (crc & 0x8000) ? (((crc << 1) ^ 0x1021) & 0xFFFF) : ((crc << 1) & 0xFFFF);
+    }
+  }
+  return crc & 0xFFFF;
+}
+
+/** CRC-32 (zlib) — same as Python's binascii.crc32 */
+const _crc32Table = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c;
+  }
+  return t;
+})();
+
+function crc32(data) {
+  let crc = 0xFFFFFFFF;
+  for (const b of data) crc = _crc32Table[(crc ^ b) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  KEYGEN — ported from keygen.py
+// ═══════════════════════════════════════════════════════════════════════════
+
+function genKey(dst, src, lt0, lt1) {
+  for (let i = 0; i < 16; i++) dst[i] = src[i];
+  const local = new Uint8Array(4);
+  for (let j = 16; j < 176; j += 4) {
+    dst[j]   = dst[j - 16]; dst[j+1] = dst[j - 15];
+    dst[j+2] = dst[j - 14]; dst[j+3] = dst[j - 13];
+    if ((j % 16) !== 0) {
+      local[0] = dst[j-4]; local[1] = dst[j-3]; local[2] = dst[j-2]; local[3] = dst[j-1];
+    } else {
+      local[0] = lt0[dst[j-3]] ^ lt1[j >> 4];
+      local[1] = lt0[dst[j-2]];
+      local[2] = lt0[dst[j-1]];
+      local[3] = lt0[dst[j-4]];
+    }
+    dst[j]   ^= local[0]; dst[j+1] ^= local[1];
+    dst[j+2] ^= local[2]; dst[j+3] ^= local[3];
+  }
+}
+
+function xorByteBlocks(dst, src, blockIndex) {
+  for (let j = blockIndex * 16; j < (blockIndex + 1) * 16; j++) {
+    dst[j % 16] ^= src[j];
+  }
+}
+
+/** c defaults to -0x1b=-27, so (-27)&0xFF = 0xE5 */
+function manipulateBytes(arr) {
+  for (let off = 0; off < 16; off += 4) {
+    const l0 = arr[off]   ^ arr[off+1];
+    const l1 = arr[off+1] ^ arr[off+2];
+    const l2 = arr[off+2] ^ arr[off+3];
+    const l3 = arr[off+3] ^ arr[off+0];
+    const l4 = l0 ^ l2;
+    const ls = [l0, l1, l2, l3];
+    for (let i = 0; i < 4; i++) {
+      let v = arr[off + i];
+      v ^= (ls[i] << 1) & 0xFF;
+      if (ls[i] & 0x80) v ^= 0xE5; // sign * (-27) & 0xFF = 0xE5
+      v ^= l4;
+      arr[off + i] = v & 0xFF;
+    }
+  }
+}
+
+function rollBytes(arr, indices) {
+  const first = arr[indices[0]];
+  for (let i = 0; i < indices.length - 1; i++) arr[indices[i]] = arr[indices[i+1]];
+  arr[indices[indices.length - 1]] = first;
+}
+
+function signRandWithKey(dst, src, lt) {
+  for (let block = 0; block < 10; block++) {
+    if (block > 0) manipulateBytes(dst);
+    xorByteBlocks(dst, src, block);
+    for (let outer = 0; outer < 16; outer += 4) {
+      for (let inner = 0; inner < 4; inner++) {
+        dst[inner + outer] = lt[dst[inner + outer]];
+      }
+    }
+    rollBytes(dst, [1, 5, 9, 13]);
+    rollBytes(dst, [2, 10]);
+    rollBytes(dst, [3, 15, 11, 7]);
+    rollBytes(dst, [6, 14]);
+  }
+  xorByteBlocks(dst, src, 10);
+}
+
+/**
+ * Sign challenge `rand` with key derived from `uid`,
+ * using lookup tables read from firmware at fw_offset_0 and fw_offset_1.
+ */
+function signRand(uid, rand, fw, fwOffset0, fwOffset1) {
+  const lt0 = new Uint8Array(256);
+  for (let i = 0; i < 256; i++) lt0[i] = fw[fwOffset0 + i];
+
+  const lt1 = new Uint8Array(11); // index 0 unused
+  for (let i = 1; i <= 10; i++) lt1[i] = fw[fwOffset1 + i];
+
+  const key = new Uint8Array(176);
+  genKey(key, uid, lt0, lt1);
+
+  const dst = new Uint8Array(rand);
+  signRandWithKey(dst, key, lt0);
+  return dst;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  FIRMWARE UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════
+
+function findPatternOffsets(patternHex, data, startOffset = 0) {
+  const pattern = hexToBytes(patternHex);
+  const offsets = [];
+  let pos = startOffset;
+  while (pos <= data.length - pattern.length) {
+    let found = true;
+    for (let i = 0; i < pattern.length; i++) {
+      if (data[pos + i] !== pattern[i]) { found = false; break; }
+    }
+    if (found) offsets.push(pos);
+    pos++;
+  }
+  return offsets;
+}
+
+async function processFirmware(rawData) {
+  let data = new Uint8Array(rawData);
+
+  // Try ZIP extraction
+  try {
+    const zip = await JSZip.loadAsync(data);
+    const names = Object.keys(zip.files);
+    if (names.length > 0) {
+      const preferred = names.find(n => n.startsWith('EC_ESC_Driver') || n.endsWith('.enc')) || names[0];
+      const content = await zip.files[preferred].async('uint8array');
+      data = content;
+      logMsg(`Extracted from ZIP: ${preferred}`, 'info');
+    }
+  } catch (e) { /* not a zip, use raw */ }
+
+  // Trim last 2 bytes (as in Python)
+  if (data.length > 4096) {
+    data = data.slice(0, data.length - 2);
+  }
+
+  return data;
+}
+
+function detectFirmwareType(data) {
+  if (data.length < 0x400) return 'UNKNOWN';
+
+  // Brightway: signature "DEPRD5C\x00" at 0x800
+  if (data.length > 0x808) {
+    const sig = String.fromCharCode(...data.slice(0x800, 0x808));
+    if (sig === 'DEPRD5C\x00') return 'BRIGHTWAY';
+  }
+
+  // Brightway alternative: single 637C pattern after 0x1000
+  if (data.length > 0x1000) {
+    const offsets = findPatternOffsets('637C', data);
+    if (offsets.length === 1 && offsets[0] > 0x1000) return 'BRIGHTWAY';
+  }
+
+  // LEQI: many 0xAA bytes and 0xAA 0xA2 patterns in 0x80-0x400 range
+  if (data.length >= 0x400) {
+    const slice = data.slice(0x80, 0x400);
+    let aaCount = 0, aaA2Count = 0;
+    for (let i = 0; i < slice.length; i++) {
+      if (slice[i] === 0xAA) {
+        aaCount++;
+        if (i + 1 < slice.length && slice[i+1] === 0xA2) aaA2Count++;
+      }
+    }
+    if (aaA2Count > 10 && aaCount > 50) return 'LEQI';
+  }
+
+  return 'UNKNOWN';
+}
+
+function getFirmwareInfo(data) {
+  const type = detectFirmwareType(data);
+  const info = { type, size: data.length };
+
+  if (type === 'BRIGHTWAY') {
+    if (data.length > 0x808) {
+      info.signature = String.fromCharCode(...data.slice(0x800, 0x807));
+    }
+    info.protocol = 'DFU (Device Firmware Update)';
+    const offsets = findPatternOffsets('637C', data);
+    if (offsets.length > 0) info.signingOffset = `0x${offsets[0].toString(16).toUpperCase()}`;
+  } else if (type === 'LEQI') {
+    info.encryption = 'XOR 0xAA';
+    info.protocol = 'Binary packets (5A 12 header)';
+  }
+
+  return info;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SERIAL ABSTRACTION
+// ═══════════════════════════════════════════════════════════════════════════
+
+class FlasherSerial {
+  constructor() {
+    this.rxBuf = [];
+    this._waiters = [];
+    this.connected = false;
+  }
+
+  _onData(bytes) {
+    for (const b of bytes) this.rxBuf.push(b);
+    this._waiters.forEach(r => r());
+    this._waiters = [];
+  }
+
+  _waitRx(ms = 5) {
+    return new Promise(resolve => {
+      if (this.rxBuf.length > 0) { resolve(); return; }
+      const tid = setTimeout(() => {
+        this._waiters = this._waiters.filter(x => x !== notify);
+        resolve();
+      }, ms);
+      const notify = () => { clearTimeout(tid); resolve(); };
+      this._waiters.push(notify);
+    });
+  }
+
+  /**
+   * Python: serial_conn.read_until(expected_byte)[-expected_n_bytes:]
+   * Reads until terminator byte found or timeout, returns last nBytes.
+   */
+  async receiveResponse(nBytes, termByte = 0x0D, timeoutMs = 2000) {
+    const collected = [];
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      while (this.rxBuf.length > 0) {
+        const b = this.rxBuf.shift();
+        collected.push(b);
+        if (b === termByte) {
+          return new Uint8Array(collected.slice(Math.max(0, collected.length - nBytes)));
+        }
+      }
+      await this._waitRx(Math.min(5, Math.max(1, deadline - Date.now())));
+    }
+    return new Uint8Array(collected.slice(Math.max(0, collected.length - nBytes)));
+  }
+
+  clearBuffer() { this.rxBuf = []; }
+  async write(_data) { throw new Error('abstract'); }
+  async disconnect() { throw new Error('abstract'); }
+}
+
+// ── Web Serial API adapter ──
+class WebSerialAdapter extends FlasherSerial {
+  constructor() {
+    super();
+    this._port = null;
+    this._writer = null;
+    this._reader = null;
+  }
+
+  async connect(baudRate = 19200) {
+    this._port = await navigator.serial.requestPort();
+    await this._port.open({ baudRate, dataBits: 8, stopBits: 1, parity: 'none', flowControl: 'none' });
+    this._writer = this._port.writable.getWriter();
+    this._startReadLoop();
+    this.connected = true;
+  }
+
+  _startReadLoop() {
+    const reader = this._port.readable.getReader();
+    this._reader = reader;
+    (async () => {
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (value) this._onData(value);
+        }
+      } catch (e) { /* disconnected */ }
+    })();
+  }
+
+  async write(data) {
+    const bytes = (data instanceof Uint8Array) ? data : new Uint8Array(data);
+    await this._writer.write(bytes);
+  }
+
+  async disconnect() {
+    this.connected = false;
+    try { if (this._reader) await this._reader.cancel(); } catch (e) {}
+    try { if (this._writer) await this._writer.releaseLock(); } catch (e) {}
+    try { if (this._port) await this._port.close(); } catch (e) {}
+  }
+}
+
+// ── WebUSB adapter — CH340 driver ported from serial.js (selevo/WebUsbSerialTerminal)
+//    Based on Linux kernel ch341.c driver + felHR85/UsbSerial
+// ──────────────────────────────────────────────────────────────────────────
+const _CH340_CFG = {
+  REQUEST_READ_VERSION:    0x5F,
+  REQUEST_READ_REGISTRY:   0x95,
+  REQUEST_WRITE_REGISTRY:  0x9A,
+  REQUEST_SERIAL_INITIATION: 0xA1,
+  REG_SERIAL:              0xC29C,
+  REG_MODEM_CTRL:          0xA4,
+  REG_MODEM_VALUE_OFF:     0xFF,
+  REG_MODEM_VALUE_ON:      0xDF,
+  REG_MODEM_VALUE_CALL:    0x9F,
+  REG_BAUD_FACTOR:         0x1312,
+  REG_BAUD_OFFSET:         0x0F2C,
+  REG_BAUD_LOW:            0x2518,
+  REG_CONTROL_STATUS:      0x2727,
+  BAUD_RATE: {
+     600: { FACTOR: 0x6481, OFFSET: 0x76 },
+    1200: { FACTOR: 0xB281, OFFSET: 0x3B },
+    2400: { FACTOR: 0xD981, OFFSET: 0x1E },
+    4800: { FACTOR: 0x6482, OFFSET: 0x0F },
+    9600: { FACTOR: 0xB282, OFFSET: 0x08 },
+   14400: { FACTOR: 0xd980, OFFSET: 0xEB },
+   19200: { FACTOR: 0xD982, OFFSET: 0x07 },
+   38400: { FACTOR: 0x6483, OFFSET: null },
+   57600: { FACTOR: 0x9883, OFFSET: null },
+  115200: { FACTOR: 0xCC83, OFFSET: null },
+  230400: { FACTOR: 0xE683, OFFSET: null },
+  }
+};
+
+// Hardware table: vendorId (int) → vendorName → productId (int) → chipName
+const _USB_TABLE = {
+  0x1a86: { "Quinheng":      { 0x7523: "CH340", 0x5523: "CH341A" } },
+  0x0403: { "FTDI":          { 0x6001: "FT232R", 0x6010: "FT2232H", 0x6011: "FT4232H", 0x6014: "FT232H", 0x6015: "FT231X" } },
+  0x10c4: { "Silicon Labs":  { 0xea60: "CP210x", 0xea70: "CP2105", 0xea71: "CP2108" } },
+  0x067b: { "Prolific":      { 0x2303: "PL2303" } },
+};
+
+class WebUSBAdapter extends FlasherSerial {
+  constructor() {
+    super();
+    this._dev = null;
+    this._port = null; // serial.Port-like object
+    this._running = false;
+    this.chipName = null;
+    this.deviceName = null;
+  }
+
+  /** Build filter array for requestDevice — vendorId/productId must be integers */
+  static _buildFilters() {
+    const filters = [];
+    for (const [vid, vendors] of Object.entries(_USB_TABLE)) {
+      for (const products of Object.values(vendors)) {
+        for (const pid of Object.keys(products)) {
+          filters.push({ vendorId: parseInt(vid), productId: parseInt(pid) });
+        }
+      }
+    }
+    return filters;
+  }
+
+  async connect(baudRate = 19200) {
+    // 1. Request device — show browser picker
+    this._dev = await navigator.usb.requestDevice({ filters: WebUSBAdapter._buildFilters() });
+
+    // 2. Identify chip
+    const vid = this._dev.vendorId;
+    const pid = this._dev.productId;
+    const vendorEntry = _USB_TABLE[vid];
+    if (!vendorEntry) throw new Error(`Unsupported USB vendor: 0x${vid.toString(16)}`);
+    const vendorName = Object.keys(vendorEntry)[0];
+    this.chipName  = vendorEntry[vendorName][pid];
+    this.deviceName = this._dev.productName || `${vendorName} ${this.chipName}`;
+    if (!this.chipName) throw new Error(`Unsupported USB product: 0x${pid.toString(16)}`);
+
+    // 3. Open + configure
+    await this._dev.open();
+    if (this._dev.configuration === null) await this._dev.selectConfiguration(1);
+
+    // 4. Find vendor-class interface (0xff) and bulk endpoints
+    this._iface = null;
+    this._epIn  = null;
+    this._epOut = null;
+    this._epInSize  = 64;
+    this._epOutSize = 64;
+
+    for (const iface of this._dev.configuration.interfaces) {
+      for (const alt of iface.alternates) {
+        if (alt.interfaceClass === 0xff) {
+          this._iface = iface.interfaceNumber;
+          for (const ep of alt.endpoints) {
+            if (ep.type === 'bulk') {
+              if (ep.direction === 'out') { this._epOut = ep.endpointNumber; this._epOutSize = ep.packetSize; }
+              if (ep.direction === 'in')  { this._epIn  = ep.endpointNumber; this._epInSize  = ep.packetSize; }
+            }
+          }
+        }
+      }
+    }
+    if (this._iface === null) throw new Error('No vendor-class interface found. Try Zadig (Windows) or check device support.');
+    if (this._epIn === null || this._epOut === null) throw new Error('Could not find bulk IN/OUT endpoints.');
+
+    // 5. Claim interface + select alternate
+    await this._dev.claimInterface(this._iface);
+    await this._dev.selectAlternateInterface(this._iface, 0);
+
+    // 6. Chip-specific initialization
+    await this._initChip(baudRate);
+
+    // 7. Start read loop
+    this._running = true;
+    this._startReadLoop();
+    this.connected = true;
+  }
+
+  /** Unified control transfer helper (mirrors serial.controlledTransfer) */
+  async _ct(direction, request, value, dataOrLen = null) {
+    const setup = { requestType: 'vendor', recipient: 'device',
+                    request, value, index: this._iface };
+    if (direction === 'out') {
+      let data;
+      if (dataOrLen === null || dataOrLen === 0) {
+        data = new Uint8Array([0]);
+      } else if (typeof dataOrLen === 'number') {
+        // numeric value → single byte
+        data = new Uint8Array([dataOrLen & 0xFF]);
+      } else {
+        data = dataOrLen;
+      }
+      return this._dev.controlTransferOut(setup, data);
+    } else {
+      // 'in' — dataOrLen is byte count
+      return this._dev.controlTransferIn(setup, dataOrLen || 2).then(r => {
+        if (r.data) return r.data.buffer;
+        return null;
+      });
+    }
+  }
+
+  async _initChip(baudRate) {
+    if (this.chipName === 'CH340' || this.chipName === 'CH341A') {
+      await this._initCH340(baudRate);
+    } else if (this.chipName === 'FT232R') {
+      await this._initFT232(baudRate);
+    } else if (this.chipName === 'CP210x') {
+      await this._initCP210x(baudRate);
+    } else {
+      // FT2232H, FT4232H, FT232H, FT231X, CP2105, CP2108, PL2303 — log only
+      console.warn(`No init implemented for ${this.chipName}. Data may not work.`);
+    }
+  }
+
+  /** CH340/CH341 init — exact sequence from Linux kernel ch341.c / serial.js */
+  async _initCH340(baudRate) {
+    const C = _CH340_CFG;
+    const d0 = new Uint8Array([0]); // null data
+
+    // Step 1: serial initiation
+    await this._ctIdx('out', C.REQUEST_SERIAL_INITIATION, C.REG_SERIAL, d0, 0xB2B9);
+    // Step 2: modem control ON
+    await this._ctIdx('out', C.REG_MODEM_CTRL, C.REG_MODEM_VALUE_ON,   d0, 0);
+    await this._ctIdx('out', C.REG_MODEM_CTRL, C.REG_MODEM_VALUE_CALL, d0, 0);
+    // Step 3: read version/status
+    let r = await this._ctIdx('in', C.REQUEST_READ_REGISTRY, 0x0706, 2, 0);
+    // Step 4: configure line control
+    await this._ctIdx('out', C.REQUEST_WRITE_REGISTRY, C.REG_CONTROL_STATUS, d0, 0);
+    await this._ctIdx('out', C.REQUEST_WRITE_REGISTRY, C.REG_BAUD_FACTOR,    d0, 0xB282); // 9600 default
+    await this._ctIdx('out', C.REQUEST_WRITE_REGISTRY, C.REG_BAUD_OFFSET,    d0, 0x0008);
+    await this._ctIdx('out', C.REQUEST_WRITE_REGISTRY, C.REG_BAUD_LOW,       d0, 0x00C3);
+    // Step 5: read again
+    r = await this._ctIdx('in', C.REQUEST_READ_REGISTRY, 0x0706, 2, 0);
+    // Step 6: control status
+    await this._ctIdx('out', C.REQUEST_WRITE_REGISTRY, C.REG_CONTROL_STATUS, d0, 0);
+    // Step 7: set actual baud rate
+    await this._ch340SetBaud(baudRate);
+  }
+
+  async _ch340SetBaud(baudRate) {
+    const C = _CH340_CFG;
+    const entry = C.BAUD_RATE[baudRate];
+    if (!entry) throw new Error(`CH340: baud rate ${baudRate} not in table`);
+    const d0 = new Uint8Array([0]);
+    const offset = entry.OFFSET !== null ? entry.OFFSET : 0;
+    await this._ctIdx('out', C.REQUEST_WRITE_REGISTRY, C.REG_BAUD_FACTOR, d0, entry.FACTOR);
+    await this._ctIdx('out', C.REQUEST_WRITE_REGISTRY, C.REG_BAUD_OFFSET, d0, offset);
+    await this._ctIdx('out', C.REQUEST_WRITE_REGISTRY, C.REG_CONTROL_STATUS, d0, 0);
+  }
+
+  /** Control transfer with explicit index (different from interface number for CH340) */
+  async _ctIdx(direction, request, value, dataOrLen, index) {
+    const setup = { requestType: 'vendor', recipient: 'device', request, value, index };
+    if (direction === 'out') {
+      let data = (typeof dataOrLen === 'number')
+        ? new Uint8Array([dataOrLen & 0xFF])
+        : (dataOrLen || new Uint8Array([0]));
+      return this._dev.controlTransferOut(setup, data);
+    } else {
+      return this._dev.controlTransferIn(setup, dataOrLen || 2).then(r => r.data ? r.data.buffer : null);
+    }
+  }
+
+  /** FT232R init */
+  async _initFT232(baudRate) {
+    const setup = (req, val, idx=0) => ({ requestType:'vendor', recipient:'device', request:req, value:val, index:idx });
+    await this._dev.controlTransferOut(setup(0x00, 0));           // Reset
+    // Baud rate divisors for FT232R (3MHz / divisor)
+    const bauds = { 300:0x2710, 600:0x1388, 1200:0x09C4, 2400:0x04E2, 4800:0x0271,
+                    9600:0xC04E, 14400:0x80D2, 19200:0x809C, 38400:0xC04E,
+                    57600:0x8060, 115200:0x001A };
+    await this._dev.controlTransferOut(setup(0x03, bauds[baudRate] || bauds[19200])); // Set baud
+    await this._dev.controlTransferOut(setup(0x04, 0x0008)); // 8N1
+    await this._dev.controlTransferOut(setup(0x02, 0x0000)); // No flow control
+    await this._dev.controlTransferOut(setup(0x01, 0x0303)); // Assert DTR+RTS
+  }
+
+  /** CP210x init */
+  async _initCP210x(baudRate) {
+    const setup = (req, val) => ({ requestType:'vendor', recipient:'interface', request:req, value:val, index:this._iface });
+    await this._dev.controlTransferOut(setup(0x00, 0x0001)); // Enable UART
+    // Set baud rate
+    const buf = new ArrayBuffer(4);
+    new DataView(buf).setUint32(0, baudRate, true);
+    await this._dev.controlTransferOut({ requestType:'vendor', recipient:'interface', request:0x1E, value:0, index:this._iface }, new Uint8Array(buf));
+    await this._dev.controlTransferOut(setup(0x03, 0x0800)); // 8N1
+    await this._dev.controlTransferOut(setup(0x13, 0x0000)); // No flow control
+  }
+
+  /** Read loop — promise-chaining style from serial.js (works on Android) */
+  _startReadLoop() {
+    const loop = () => {
+      if (!this._running || !this._dev.opened) return;
+      this._dev.transferIn(this._epIn, this._epInSize).then(result => {
+        if (result.data && result.data.byteLength > 0) {
+          this._onData(new Uint8Array(result.data.buffer));
+        }
+        loop(); // chain next read
+      }, err => {
+        if (this._running) {
+          console.warn('WebUSB read error:', err);
+          setTimeout(loop, 50);
+        }
+      });
+    };
+    loop();
+  }
+
+  async write(data) {
+    const bytes = (data instanceof Uint8Array) ? data : new Uint8Array(data);
+    await this._dev.transferOut(this._epOut, bytes);
+  }
+
+  async disconnect() {
+    this._running = false;
+    this.connected = false;
+    try {
+      // CH340 modem off
+      if (this.chipName === 'CH340' || this.chipName === 'CH341A') {
+        const C = _CH340_CFG;
+        await this._ctIdx('out', C.REG_MODEM_CTRL, C.REG_MODEM_VALUE_OFF, new Uint8Array([0]), 0).catch(()=>{});
+      }
+    } catch (e) {}
+    try { await this._dev.releaseInterface(this._iface); } catch (e) {}
+    try { await this._dev.close(); } catch (e) {}
+  }
+}
+
+// ── Simulation serial (no hardware) ──
+class SimulationSerial extends FlasherSerial {
+  constructor() {
+    super();
+    this._onWrite = null;
+    this.connected = true;
+  }
+  async connect() { this.connected = true; }
+  async write(data) {
+    if (this._onWrite) await this._onWrite(new Uint8Array(data));
+  }
+  injectResponse(bytes) {
+    setTimeout(() => this._onData(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)), 8);
+  }
+  async disconnect() { this.connected = false; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BRIGHTWAY FLASHER (DFU Protocol)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const BW_STATE = {
+  UID:'UID', VER_INIT:'VER_INIT', INIT:'INIT', BLE_RAND:'BLE_RAND',
+  MCU_RAND:'MCU_RAND', MCU_KEY:'MCU_KEY', NVM_WRITE:'NVM_WRITE',
+  SEND_FW:'SEND_FW', WR_INFO:'WR_INFO', DFU_VERIFY:'DFU_VERIFY',
+  DFU_ACTIVE:'DFU_ACTIVE', VER_DONE:'VER_DONE', DONE:'DONE'
+};
+const PACKET_SIZE = 0x800;
+const CHUNK_SIZE  = 0x80;
+const CHUNKS_PER_PACKET = PACKET_SIZE / CHUNK_SIZE; // 16
+const MAX_REPEATS = 20;
+
+class BrightwayFlasher {
+  constructor(serial, { simulation = false, debug = false, onLog, onStatus, onProgress, abortSignal } = {}) {
+    this.serial = serial;
+    this.simulation = simulation;
+    this.debug = debug;
+    this.log = onLog || (() => {});
+    this.status = onStatus || (() => {});
+    this.progress = onProgress || (() => {});
+    this.abort = abortSignal || { aborted: false };
+
+    this.state = BW_STATE.UID;
+    this.prevState = BW_STATE.UID;
+    this.fw = null;
+    this.fwOffsets = [];
+    this.uid = null;
+    this.bleRand = new Uint8Array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
+    this.mcuRand = null;
+    this.packet = null;
+    this.dataSent = new Uint8Array(0);
+    this._dataSentChunks = [];
+    this.totalPackets = 0;
+    this.nPacketsSent = 0;
+
+    if (simulation) this._setupSim();
+  }
+
+  _setupSim() {
+    const sim = this.serial;
+    const flasher = this;
+    sim._onWrite = async (data) => {
+      await sleep(10);
+      if (flasher.state === BW_STATE.UID) {
+        const uid = strToBytes("foobarfoobar1337");
+        sim.injectResponse(new Uint8Array([0x64, 0x2A, 0x10, ...uid, 0x10, 0x9B]));
+      } else if ([BW_STATE.VER_INIT, BW_STATE.VER_DONE].includes(flasher.state)) {
+        sim.injectResponse(strToBytes("0010\r"));
+      } else if (flasher.state === BW_STATE.INIT) {
+        sim.injectResponse(new Uint8Array([0x6F, 0x6B, ...new Uint8Array(23), 0x0D]));
+      } else if (flasher.state === BW_STATE.BLE_RAND) {
+        const uid = strToBytes("foobarfoobar1337");
+        const bleKey = flasher.fw
+          ? signRand(uid, flasher.bleRand, flasher.fw, flasher.fwOffsets[0], flasher.fwOffsets[1])
+          : new Uint8Array(16);
+        sim.injectResponse(new Uint8Array([0x6F, 0x6B, 0x20, ...bleKey, 0x0D]));
+      } else if (flasher.state === BW_STATE.MCU_RAND) {
+        const mcuRand = crypto.getRandomValues(new Uint8Array(16));
+        flasher._simMcuRand = mcuRand;
+        sim.injectResponse(new Uint8Array([0x6F, 0x6B, 0x20, ...mcuRand, 0x0D]));
+      } else if (flasher.state === BW_STATE.SEND_FW) {
+        sim.injectResponse(new Uint8Array([0x06]));
+      } else {
+        sim.injectResponse(strToBytes("ok\r"));
+      }
+    };
+  }
+
+  loadFirmware(data) {
+    this.fw = data;
+
+    const offsets0 = findPatternOffsets('637C', data);
+    if (offsets0.length !== 1) throw new Error('Invalid/unsupported firmware: expected single 637C pattern');
+    const off0 = offsets0[0];
+
+    const offsets1 = findPatternOffsets('0102', data, off0);
+    if (offsets1.length !== 1) throw new Error('Invalid/unsupported firmware: expected single 0102 pattern after 637C');
+    const off1 = offsets1[0] - 1;
+
+    this.fwOffsets = [off0, off1];
+    this.totalPackets = Math.ceil(data.length / PACKET_SIZE);
+    this.log(`Firmware loaded: ${data.length} bytes, ${this.totalPackets} packets`, 'info');
+  }
+
+  _emitState(text) {
+    if (this.prevState !== this.state) this.status(text);
+    this.prevState = this.state;
+  }
+
+  _emitProgress() {
+    if (this.totalPackets > 0)
+      this.progress(Math.min(99, Math.floor(this.nPacketsSent / this.totalPackets * 100)));
+  }
+
+  async _send(data) {
+    const bytes = (data instanceof Uint8Array) ? data : new Uint8Array(data);
+    this.debugLog('TX', bytes);
+    await this.serial.write(bytes);
+  }
+
+  async _recv(n, term = 0x0D, timeout = 2000) {
+    const resp = await this.serial.receiveResponse(n, term, timeout);
+    this.debugLog('RX', resp);
+    return resp;
+  }
+
+  debugLog(label, bytes) {
+    if (!this.debug) return;
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+    this.log(`${label}: ${hex}`, label === 'TX' ? 'tx' : 'rx');
+  }
+
+  async run() {
+    if (!this.fw) throw new Error('No firmware loaded');
+    while (this.state !== BW_STATE.DONE) {
+      if (this.abort.aborted) throw new Error('Aborted by user');
+      await this._step();
+      this._emitProgress();
+    }
+    this._emitState(`${this.state} → Enjoy!`);
+    this.progress(100);
+  }
+
+  async _step() {
+    switch (this.state) {
+      case BW_STATE.UID:        this._emitState('Fetching UID…');          await this._getUid();       break;
+      case BW_STATE.VER_INIT:   this._emitState("Sending 'get_ver'…");     await this._getVer();       break;
+      case BW_STATE.INIT:       this._emitState("Sending 'rd_info'…");     await this._sendRdInfo();   break;
+      case BW_STATE.BLE_RAND:   this._emitState('Sending BLE_RAND…');      await this._sendBleRand();  break;
+      case BW_STATE.MCU_RAND:   this._emitState('Requesting MCU_RAND…');   await this._reqMcuRand();   break;
+      case BW_STATE.MCU_KEY:    this._emitState('Sending MCU_KEY…');       await this._sendMcuKey();   break;
+      case BW_STATE.NVM_WRITE:  this._emitState('NVM Write…');             await this._sendNvmWrite(); break;
+      case BW_STATE.SEND_FW:    this._emitState('Sending firmware…');      await this._sendFwPacket(); break;
+      case BW_STATE.WR_INFO:    this._emitState('WR_INFO…');               await this._sendWrInfo();   break;
+      case BW_STATE.DFU_VERIFY: this._emitState('Verifying DFU…');         await this._verifyDfu();    break;
+      case BW_STATE.DFU_ACTIVE: this._emitState('Activating DFU…');        await this._activateDfu();  break;
+      case BW_STATE.VER_DONE:   this._emitState("Final 'get_ver'…");       await this._getVer();       break;
+      default: throw new Error(`Unknown state: ${this.state}`);
+    }
+  }
+
+  async testConnection() {
+    let retries = 0;
+    while (this.state !== BW_STATE.INIT) {
+      if (this.abort.aborted) throw new Error('Aborted');
+      if (retries++ >= MAX_REPEATS) throw new Error('Max retries — check connection');
+      if (this.state === BW_STATE.UID)      await this._getUid();
+      else if (this.state === BW_STATE.VER_INIT) await this._getVer();
+    }
+    this.log('✓ Connection established!', 'ok');
+    this.progress(100);
+  }
+
+  async _getUid() {
+    const cmd = hexToBytes('532A7DAC');
+    await this._send(cmd);
+    const resp = await this._recv(21, 0x9B);
+    if (resp.includes(0x64) && resp.includes(0x9B)) {
+      const start = resp.indexOf(0x64);
+      const end = resp.lastIndexOf(0x9B);
+      const slice = resp.slice(start, end);
+      if (slice.length >= 19 && slice[1] === cmd[1] && slice[2] === 0x10) {
+        this.uid = slice.slice(3, 3 + 16);
+        this.log('> Got UID: ' + bytesToAscii(this.uid));
+        this.state = BW_STATE.VER_INIT;
+      }
+    }
+  }
+
+  async _getVer() {
+    await this._send(strToBytes('down get_ver\r'));
+    const resp = await this._recv(5, 0x0D, 3000);
+    if (resp.length > 0 && resp[resp.length - 1] === 0x0D) {
+      const ver = bytesToAscii(resp).replace(/\r.*/, '');
+      if (this.state === BW_STATE.VER_INIT) {
+        this.log('> MCU Version (before): ' + ver);
+        this.state = BW_STATE.INIT;
+      } else if (this.state === BW_STATE.VER_DONE) {
+        this.log('> MCU Version (after): ' + ver);
+        this.state = BW_STATE.DONE;
+      }
+    }
+  }
+
+  async _sendRdInfo() {
+    await this._send(new Uint8Array([...strToBytes('down rd_info\r'), 0, 0, 0]));
+    const resp = await this._recv(26, 0x0D, 300);
+    if (startsWithOk(resp)) this.state = BW_STATE.BLE_RAND;
+  }
+
+  async _sendBleRand() {
+    const expected = signRand(this.uid, this.bleRand, this.fw, this.fwOffsets[0], this.fwOffsets[1]);
+    await this._send(new Uint8Array([...strToBytes('down ble_rand '), ...this.bleRand, 0x0D]));
+    const resp = await this._recv(20, 0x0D);
+    if (startsWithOk(resp)) {
+      const bleKey = resp.slice(3, 19);
+      if (this.debug) this.log('BLE_KEY: ' + toHex(bleKey), 'dbg');
+      if (!this.simulation && !arrEq(bleKey, expected)) {
+        throw new Error('BLE_KEY mismatch! Is the UID correct?');
+      }
+      this.state = BW_STATE.MCU_RAND;
+    }
+  }
+
+  async _reqMcuRand() {
+    await this._send(strToBytes('down mcu_rand\r'));
+    const resp = await this._recv(20, 0x0D);
+    if (startsWithOk(resp)) {
+      this.mcuRand = resp.slice(3, 19);
+      if (this.debug) this.log('MCU_RAND: ' + toHex(this.mcuRand), 'dbg');
+      this.state = BW_STATE.MCU_KEY;
+    }
+  }
+
+  async _sendMcuKey() {
+    const mcuKey = signRand(this.uid, this.mcuRand, this.fw, this.fwOffsets[0], this.fwOffsets[1]);
+    await this._send(new Uint8Array([...strToBytes('down mcu_key '), ...mcuKey, 0x0D]));
+    const resp = await this._recv(3, 0x0D);
+    if (arrEq(resp, strToBytes('ok\r'))) this.state = BW_STATE.NVM_WRITE;
+  }
+
+  async _sendNvmWrite() {
+    const start = this.nPacketsSent * PACKET_SIZE;
+    this.packet = this.fw.slice(start, start + PACKET_SIZE);
+    const loc = this.nPacketsSent * PACKET_SIZE;
+    const cmd = `down nvm_write ${loc.toString(16).toUpperCase().padStart(8,'0')}`;
+    if (this.debug) this.log(cmd, 'dbg');
+    await this._send(new Uint8Array([...strToBytes(cmd), 0x0D]));
+    const resp = await this._recv(3, 0x0D, 300);
+    if (resp.includes(0x6B) && resp.includes(0x0D)) this.state = BW_STATE.SEND_FW; // 'k\r'
+  }
+
+  async _sendFwPacket() {
+    if (this.packet && this.packet.length > 0) {
+      // Pad packet to PACKET_SIZE
+      const padded = new Uint8Array(PACKET_SIZE).fill(0xFF);
+      padded.set(this.packet);
+
+      for (let n = 0; n < CHUNKS_PER_PACKET; n++) {
+        if (this.abort.aborted) throw new Error('Aborted');
+        const chunk = padded.slice(n * CHUNK_SIZE, (n + 1) * CHUNK_SIZE);
+        const N  = (n + 1) & 0xFF;
+        const N_ = (0xFF - (n + 1)) & 0xFF;
+        const crcVal = crc16(chunk);
+        const pkt = new Uint8Array([0x01, N, N_, ...chunk, (crcVal >> 8) & 0xFF, crcVal & 0xFF]);
+
+        let acked = false;
+        for (let rep = 0; rep < MAX_REPEATS; rep++) {
+          await this._send(pkt);
+          const resp = await this._recv(1, 0x06, 200);
+          if (resp.length > 0 && resp[0] === 0x06) { acked = true; break; }
+          if (resp.length > 0 && resp[0] === 0x15) throw new Error('CRC fail from device');
+        }
+        if (!acked) throw new Error(`No ACK after ${MAX_REPEATS} retries. Check adapter driver and firmware file.`);
+      }
+    }
+
+    // EOT
+    await this._send(new Uint8Array([0x04, 0x04, 0x04]));
+    await this._recv(3, 0x06, 120); // 120ms matches Python's 0.1s serial timeout
+
+    this.nPacketsSent++;
+    // Append packet to dataSent list (avoid O(n²) realloc)
+    if (this.packet && this.packet.length > 0) this._dataSentChunks.push(this.packet.slice());
+
+    this.state = BW_STATE.WR_INFO;
+  }
+
+  async _sendWrInfo() {
+    // Lazily concat all sent chunks for CRC computation
+    if (this._dataSentChunks.length > 0) {
+      const total = this._dataSentChunks.reduce((s, c) => s + c.length, 0);
+      this.dataSent = new Uint8Array(total);
+      let off = 0;
+      for (const c of this._dataSentChunks) { this.dataSent.set(c, off); off += c.length; }
+    }
+    const crcVal = crc32(this.dataSent);
+    const crcHex = crcVal.toString(16).padStart(8, '0');
+    const cmd = `down wr_info ${this.nPacketsSent} ${crcHex} ${this.nPacketsSent * PACKET_SIZE}`;
+    if (this.debug) this.log(cmd, 'dbg');
+    await this._send(new Uint8Array([...strToBytes(cmd), 0x0D]));
+    const resp = await this._recv(3, 0x0D);
+    if (resp.includes(0x6B) && resp.includes(0x0D)) { // 'k\r'
+      this.state = (this.packet && this.packet.length > 0) ? BW_STATE.NVM_WRITE : BW_STATE.DFU_VERIFY;
+    }
+  }
+
+  async _verifyDfu() {
+    await this._send(strToBytes('down dfu_verify\r'));
+    const resp = await this._recv(3, 0x0D, 5000);
+    if (resp.includes(0x6B)) { // 'k\r' or 'ok\r'
+      if (this.debug) this.log('Firmware verified!', 'dbg');
+      this.state = BW_STATE.DFU_ACTIVE;
+    } else if (resp.includes(0x72)) { // 'r\r' = error
+      throw new Error('DFU verify failed');
+    }
+  }
+
+  async _activateDfu() {
+    await this._send(strToBytes('down dfu_active\r'));
+    const resp = await this._recv(3, 0x0D, 5000);
+    if (resp.includes(0x6B)) {
+      this.log('> Firmware update completed successfully!', 'ok');
+      this.state = BW_STATE.VER_DONE;
+    } else if (resp.includes(0x72)) {
+      throw new Error('DFU activate failed');
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  LEQI FLASHER (5A 12 Binary Protocol)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const LEQI_FIRMWARE_OFFSET = 0x80;
+const LEQI_FIRMWARE_SIZE   = 0x9880; // 39040 bytes
+const LEQI_CHUNK_SIZE      = 128;
+
+class LeqiFlasher {
+  constructor(serial, { simulation = false, debug = false, onLog, onStatus, onProgress, abortSignal } = {}) {
+    this.serial = serial;
+    this.simulation = simulation;
+    this.debug = debug;
+    this.log = onLog || (() => {});
+    this.status = onStatus || (() => {});
+    this.progress = onProgress || (() => {});
+    this.abort = abortSignal || { aborted: false };
+
+    this.fw = null;
+    this.encryptedFw = null;
+    this.fwSize = 0;
+  }
+
+  loadFirmware(data) {
+    this.fw = data;
+    this.encryptedFw = data;
+    if (data.length > LEQI_FIRMWARE_SIZE) {
+      if (data.length < LEQI_FIRMWARE_OFFSET + LEQI_FIRMWARE_SIZE)
+        throw new Error(`Image too small: ${data.length} bytes`);
+      this.encryptedFw = data.slice(LEQI_FIRMWARE_OFFSET, LEQI_FIRMWARE_OFFSET + LEQI_FIRMWARE_SIZE);
+    }
+    this.fwSize = this._calcFirmwareSize(this.encryptedFw);
+    this.log(`Loaded LEQI firmware: ${data.length} bytes`, 'info');
+    this.log(`Firmware size (AA padding end): 0x${this.fwSize.toString(16).toUpperCase()} (${this.fwSize} bytes)`, 'info');
+  }
+
+  _calcFirmwareSize(data) {
+    let maxLen = 0, maxEnd = 0;
+    let i = 0;
+    while (i < data.length) {
+      if (data[i] === 0xAA) {
+        const start = i;
+        while (i < data.length && data[i] === 0xAA) i++;
+        const len = i - start;
+        if (len > maxLen && len > 500) { maxLen = len; maxEnd = i; }
+      } else i++;
+    }
+    if (maxEnd > 0) return Math.ceil(maxEnd / 128) * 128;
+    return data.length;
+  }
+
+  _crc16(data) { return crc16(data); } // CRC-16/XMODEM — same poly/init
+
+  _buildPacket(type, payload) {
+    const hdr = new Uint8Array([0x5A, 0x12, type, payload.length]);
+    const full = new Uint8Array(hdr.length + payload.length);
+    full.set(hdr); full.set(payload, hdr.length);
+    const crcVal = this._crc16(full);
+    const out = new Uint8Array(full.length + 2);
+    out.set(full);
+    out[full.length]   = (crcVal >> 8) & 0xFF;
+    out[full.length+1] = crcVal & 0xFF;
+    return out;
+  }
+
+  async run() {
+    if (!this.encryptedFw) throw new Error('No firmware loaded');
+    if (this.simulation) { await this._runSimulation(); return; }
+
+    await this._sendStartCommand();
+    await this._sendFirmwareData();
+    await this._sendEndCommand();
+
+    this.log('✓ LEQI firmware update completed', 'ok');
+    this.progress(100);
+  }
+
+  async _sendAndReceive(pkt, desc, timeout = 2000) {
+    const bytes = pkt instanceof Uint8Array ? pkt : new Uint8Array(pkt);
+    if (this.debug) this.log(`TX [${desc}]: ${toHex(bytes)}`, 'tx');
+    this.serial.clearBuffer();
+    await this.serial.write(bytes);
+    // Small delay for controller to process (matches Python's time.sleep(0.05))
+    await sleep(50);
+    // Read response: scan raw rxBuf for 0x5A header byte directly.
+    // NOTE: do NOT use receiveResponse() here — it uses 0x5A as a "terminator"
+    // which would CONSUME the start byte, breaking the response parsing.
+    const full = await this._readLeqiResponse(timeout);
+    if (this.debug && full) this.log(`RX [${desc}]: ${toHex(full)}`, 'rx');
+    return full;
+  }
+
+  async _readLeqiResponse(timeout = 2000) {
+    const deadline = Date.now() + timeout;
+    // Wait for 0x5A header
+    while (Date.now() < deadline) {
+      if (this.serial.rxBuf.length > 0) {
+        const b = this.serial.rxBuf.shift();
+        if (b === 0x5A) {
+          // Read 6 more bytes
+          const rest = [];
+          const inner = Date.now() + 500;
+          while (rest.length < 6 && Date.now() < inner) {
+            if (this.serial.rxBuf.length > 0) rest.push(this.serial.rxBuf.shift());
+            else await this.serial._waitRx(10);
+          }
+          return new Uint8Array([0x5A, ...rest]);
+        }
+      }
+      await this.serial._waitRx(20);
+    }
+    return null;
+  }
+
+  async _sendStartCommand() {
+    this.status('Sending firmware update start command…');
+    const payload = new Uint8Array(8);
+    payload[0] = 0x31; payload[1] = 0x00;
+    payload[2] = this.fwSize & 0xFF;
+    payload[3] = (this.fwSize >> 8) & 0xFF;
+    payload[4] = 0x00; payload[5] = 0x00;
+    const pkt = this._buildPacket(0x03, payload.slice(0, 6));
+
+    const resp = await this._sendAndReceive(pkt, 'Start');
+    if (!resp || resp.length < 5 || resp[1] !== 0x21 || resp[2] !== 0x03)
+      throw new Error('Invalid start response from controller');
+    this.log('✓ Start command acknowledged', 'ok');
+  }
+
+  async _sendFirmwareData() {
+    this.status('Sending firmware data…');
+    let offset = 0, chunkNum = 0, failedChunks = 0;
+    const totalChunks = Math.ceil(this.fwSize / LEQI_CHUNK_SIZE);
+
+    while (offset < this.fwSize) {
+      if (this.abort.aborted) throw new Error('Aborted');
+
+      const end = Math.min(offset + LEQI_CHUNK_SIZE, this.fwSize);
+      let chunk = this.encryptedFw.slice(offset, end);
+      if (chunk.length < LEQI_CHUNK_SIZE) {
+        const padded = new Uint8Array(LEQI_CHUNK_SIZE).fill(0xFF);
+        padded.set(chunk);
+        chunk = padded;
+      }
+
+      // Packet: [5A][12][04][0x84][offset_32LE][data_128][crc_16BE]
+      const payload = new Uint8Array(4 + LEQI_CHUNK_SIZE);
+      const view = new DataView(payload.buffer);
+      view.setUint32(0, offset, true); // LE offset
+      payload.set(chunk, 4);
+
+      const hdr = new Uint8Array([0x5A, 0x12, 0x04, 0x84]);
+      const full = new Uint8Array(hdr.length + payload.length);
+      full.set(hdr); full.set(payload, 4);
+      const crcVal = this._crc16(full);
+      const pkt = new Uint8Array(full.length + 2);
+      pkt.set(full);
+      pkt[full.length] = (crcVal >> 8) & 0xFF;
+      pkt[full.length + 1] = crcVal & 0xFF;
+
+      chunkNum++;
+      const resp = await this._sendAndReceive(pkt, `Chunk ${chunkNum} @ 0x${offset.toString(16)}`);
+
+      if (!resp) {
+        this.log(`WARNING: No response for chunk ${chunkNum}`, 'warn');
+        failedChunks++;
+      } else if (resp.length < 5 || resp[1] !== 0x21 || resp[2] !== 0x04) {
+        this.log(`WARNING: Invalid response for chunk ${chunkNum}`, 'warn');
+        failedChunks++;
+      } else if (resp[4] !== 0x01) {
+        this.log(`ERROR: Chunk ${chunkNum} REJECTED (status=0x${resp[4].toString(16)})`, 'err');
+        failedChunks++;
+      }
+
+      offset = end;
+      const pct = Math.floor((chunkNum / totalChunks) * 90);
+      this.progress(pct);
+
+      if (chunkNum % 10 === 0) {
+        this.log(`Progress: ${chunkNum}/${totalChunks} chunks (${pct}%)`, 'info');
+      }
+
+      await sleep(44);
+    }
+
+    if (failedChunks > 0) throw new Error(`${failedChunks} chunks had invalid/missing responses`);
+    this.log(`✓ Sent ${chunkNum} chunks`, 'ok');
+    await sleep(690);
+  }
+
+  async _sendEndCommand() {
+    this.status('Finalizing firmware update…');
+    const pkt = this._buildPacket(0x05, new Uint8Array(0));
+
+    for (let attempt = 1; attempt <= 10; attempt++) {
+      if (attempt > 1) { this.log(`Retry ${attempt}/10…`, 'warn'); await sleep(60); }
+      const resp = await this._sendAndReceive(pkt, `End (attempt ${attempt})`, 400);
+      if (resp && resp.length >= 5 && resp[1] === 0x21 && resp[2] === 0x05) {
+        this.log('✓ End command acknowledged', 'ok');
+        return;
+      }
+    }
+    throw new Error('No valid response to end command after 10 attempts');
+  }
+
+  async testConnection() {
+    if (this.simulation) {
+      this.log('Simulation: LEQI connection test OK', 'ok');
+      this.progress(100);
+      return;
+    }
+    // Send a minimal start packet and check for 5A 21 03 response
+    const payload = new Uint8Array([0x31, 0x00, 0x00, 0x10, 0x00, 0x00]);
+    const pkt = this._buildPacket(0x03, payload);
+    const resp = await this._sendAndReceive(pkt, 'TestConn');
+    if (resp && resp.length >= 3 && resp[1] === 0x21) {
+      this.log('✓ LEQI connection OK', 'ok');
+      this.progress(100);
+    } else {
+      throw new Error('No valid LEQI response — check connection and baud rate');
+    }
+  }
+
+  async _runSimulation() {
+    this.status('SIMULATION: Starting LEQI firmware flash…');
+    await sleep(100);
+    this.log('[SIM] Start command → ACK', 'dbg');
+    this.progress(5);
+
+    const totalChunks = Math.ceil(this.fwSize / LEQI_CHUNK_SIZE);
+    for (let i = 1; i <= totalChunks; i++) {
+      if (this.abort.aborted) throw new Error('Aborted');
+      await sleep(5);
+      const pct = 5 + Math.floor((i / totalChunks) * 85);
+      this.progress(pct);
+      if (i % 50 === 0 || i === totalChunks) {
+        this.log(`[SIM] Chunk ${i}/${totalChunks} (${pct}%)`, 'dbg');
+      }
+    }
+
+    this.status('SIMULATION: Finalizing…');
+    this.progress(95);
+    await sleep(200);
+    this.log('✓ SIMULATION: LEQI firmware update completed!', 'ok');
+    this.progress(100);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function hexToBytes(hex) {
+  const h = hex.replace(/\s/g, '');
+  const arr = new Uint8Array(h.length / 2);
+  for (let i = 0; i < h.length; i += 2) arr[i/2] = parseInt(h.substring(i, 2+i), 16);
+  return arr;
+}
+function toHex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+}
+function strToBytes(s) { return new TextEncoder().encode(s); }
+function bytesToAscii(bytes) { return new TextDecoder('ascii', {fatal: false}).decode(bytes); }
+function startsWithOk(bytes) { return bytes.length >= 2 && bytes[0] === 0x6F && bytes[1] === 0x6B; }
+function arrEq(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+// Add includes to Uint8Array
+Uint8Array.prototype.includes = function(val) {
+  for (const b of this) if (b === val) return true; return false;
+};
+Uint8Array.prototype.indexOf = function(val) {
+  for (let i = 0; i < this.length; i++) if (this[i] === val) return i; return -1;
+};
+Uint8Array.prototype.lastIndexOf = function(val) {
+  for (let i = this.length - 1; i >= 0; i--) if (this[i] === val) return i; return -1;
+};
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CHIPTUNE — plays chiptune.mp3 if available, else Web Audio synth fallback
+// ═══════════════════════════════════════════════════════════════════════════
+const Chiptune = (() => {
+  // ── MP3 player ──
+  let audio = null;
+  let usingMp3 = false;
+
+  // ── Web Audio synth fallback ──
+  let ctx = null, gainNode = null, synthPlaying = false, scheduleTimer = null;
+  let noteIdx = 0;
+
+  const MELODY = [
+    261.63, 311.13, 392.00, 466.16,  392.00, 311.13, 261.63, 207.65,
+    233.08, 261.63, 311.13, 392.00,  311.13, 261.63, 233.08, 196.00,
+    261.63, 311.13, 392.00, 523.25,  466.16, 392.00, 311.13, 261.63,
+    207.65, 233.08, 261.63, 311.13,  261.63, 233.08, 196.00, 0,
+  ];
+  const BASS = [
+    130.81, 0, 0, 0,  130.81, 0, 0, 0,
+    116.54, 0, 0, 0,  116.54, 0, 0, 0,
+    130.81, 0, 0, 0,  130.81, 0, 0, 0,
+    103.83, 0, 0, 0,  103.83, 0, 0, 0,
+  ];
+  const NOTE_DUR = 0.11, NOTE_GAP = 0.015, TEMPO = NOTE_DUR + NOTE_GAP, VOLUME = 0.08;
+
+  function makeOsc(freq, type, startT, dur, vol) {
+    if (!ctx || freq === 0) return;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.connect(env); env.connect(gainNode);
+    osc.type = type; osc.frequency.value = freq;
+    env.gain.setValueAtTime(0, startT);
+    env.gain.linearRampToValueAtTime(vol, startT + 0.005);
+    env.gain.setValueAtTime(vol, startT + dur - 0.02);
+    env.gain.linearRampToValueAtTime(0, startT + dur);
+    osc.start(startT); osc.stop(startT + dur + 0.01);
+  }
+
+  function scheduleChunk() {
+    if (!synthPlaying || !ctx) return;
+    const now = ctx.currentTime, CHUNK = 8;
+    for (let i = 0; i < CHUNK; i++) {
+      const idx = (noteIdx + i) % MELODY.length, t = now + i * TEMPO;
+      makeOsc(MELODY[idx], 'square',   t, NOTE_DUR,     VOLUME * 0.7);
+      makeOsc(BASS[idx],   'triangle', t, NOTE_DUR * 2, VOLUME * 0.5);
+      if (idx % 4 === 0 && MELODY[idx] > 0)
+        makeOsc(MELODY[idx] * 2, 'square', t + TEMPO / 2, NOTE_DUR * 0.5, VOLUME * 0.25);
+    }
+    noteIdx = (noteIdx + CHUNK) % MELODY.length;
+    scheduleTimer = setTimeout(scheduleChunk, CHUNK * TEMPO * 900);
+  }
+
+  function startSynth() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      gainNode = ctx.createGain(); gainNode.gain.value = 1;
+      gainNode.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    synthPlaying = true;
+    scheduleChunk();
+  }
+
+  function stopSynth() {
+    synthPlaying = false;
+    if (scheduleTimer) clearTimeout(scheduleTimer);
+  }
+
+  // ── Try loading ./chiptune.mp3 relative to the HTML file ──
+  // NOTE: fetch() fails on file:// — use Audio canplaythrough/error instead
+  function tryLoadRelativeMp3() {
+    return new Promise(resolve => {
+      const a = new Audio('./resources/chiptune.mp3');
+      a.loop = true;
+      a.volume = 0.35;
+      const done = (ok) => {
+        a.removeEventListener('canplaythrough', onOk);
+        a.removeEventListener('error', onErr);
+        if (ok) { audio = a; usingMp3 = true; }
+        resolve(ok);
+      };
+      const onOk = () => done(true);
+      const onErr = () => done(false);
+      a.addEventListener('canplaythrough', onOk, { once: true });
+      a.addEventListener('error', onErr, { once: true });
+      // Timeout fallback — if neither fires within 2s, assume missing
+      setTimeout(() => done(false), 2000);
+      a.load();
+    });
+  }
+
+  return {
+    // Called once after disclaimer accept (user gesture required for autoplay)
+    async start() {
+      if (!usingMp3) {
+        // Try relative path first (HTML and mp3 in same folder)
+        usingMp3 = await tryLoadRelativeMp3();
+      }
+      if (usingMp3 && audio) {
+        try { await audio.play(); return; } catch (e) { usingMp3 = false; audio = null; }
+      }
+      // Fallback: synth
+      startSynth();
+    },
+
+    stop() {
+      if (usingMp3 && audio) { audio.pause(); audio.currentTime = 0; }
+      else stopSynth();
+    },
+
+    toggle() {
+      const wasPlaying = this.isPlaying();
+      wasPlaying ? this.stop() : this.start();
+      return !wasPlaying;
+    },
+
+    isPlaying() {
+      if (usingMp3 && audio) return !audio.paused;
+      return synthPlaying;
+    },
+
+    // Called when user manually selects a file via <input type=file>
+    loadFile(file) {
+      if (audio) { audio.pause(); audio = null; }
+      stopSynth();
+      const url = URL.createObjectURL(file);
+      audio = new Audio(url);
+      audio.loop = true;
+      audio.volume = 0.35;
+      usingMp3 = true;
+      audio.play().catch(() => {});
+    },
+
+    isUsingMp3() { return usingMp3; }
+  };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  UI CONTROLLER
+// ═══════════════════════════════════════════════════════════════════════════
+
+const UI = {
+  $: id => document.getElementById(id),
+
+  _logEl: null,
+  _abortCtrl: null,
+  _serial: null,
+  _fwData: null,
+  _fwType: null,
+
+  init() {
+    this._logEl = this.$('log');
+    this.$('btnWebSerial').addEventListener('click', () => this.connectWebSerial());
+    this.$('btnWebUSB').addEventListener('click', () => this.connectWebUSB());
+    this.$('btnDisconnect').addEventListener('click', () => this.disconnect());
+    this.$('btnTestConn').addEventListener('click', () => this.testConnection());
+    this.$('btnFlash').addEventListener('click', () => this.startFlash());
+    this.$('btnAbort').addEventListener('click', () => this.abortFlash());
+    this.$('btnClearLog').addEventListener('click', () => { this._logEl.innerHTML = ''; });
+    this.$('fwFile').addEventListener('change', e => this.onFileSelect(e));
+    this.$('chkSim').addEventListener('change', () => this._updateSimMode());
+
+    // Check API availability
+    if (!navigator.serial && !navigator.usb) {
+      this.addLog('⚠ Neither Web Serial nor WebUSB is available. Use Chrome/Edge/Opera browser.', 'err');
+    } else {
+      if (navigator.serial) this.addLog('✓ Web Serial API available', 'ok');
+      if (navigator.usb)    this.addLog('✓ WebUSB API available', 'ok');
+    }
+
+    this._updateSimMode();
+
+    // Music toggle button (left-click = play/pause, right-click = load file)
+    this.$('btnMusic').addEventListener('click', () => {
+      const on = Chiptune.toggle();
+      this.$('btnMusic').textContent = on ? '♫' : '♪';
+      this.$('btnMusic').style.color = on ? 'var(--amber)' : '';
+    });
+    this.$('inputMusicFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      Chiptune.loadFile(file);
+      this.$('btnMusic').textContent = '♫';
+      this.$('btnMusic').style.color = 'var(--amber)';
+      this.addLog(`Music: loaded ${file.name}`, 'info');
+      e.target.value = ''; // reset so same file can be re-selected
+    });
+  },
+
+  _updateSimMode() {
+    const sim = this.$('chkSim').checked;
+    this.$('btnWebSerial').disabled = sim;
+    this.$('btnWebUSB').disabled = sim;
+    if (sim) {
+      this.setConnected(true, 'Simulation mode');
+    } else if (!this._serial || !this._serial.connected) {
+      this.setConnected(false, 'Not connected');
+    }
+    this._updateFlashButton();
+  },
+
+  async connectWebSerial() {
+    if (!navigator.serial) { this.addLog('Web Serial not supported in this browser', 'err'); return; }
+    try {
+      const adapter = new WebSerialAdapter();
+      await adapter.connect(19200);
+      this._serial = adapter;
+      this.setConnected(true, 'Connected via Web Serial');
+      this.addLog('✓ Web Serial connected @ 19200 baud', 'ok');
+    } catch (e) {
+      this.addLog(`Connection failed: ${e.message}`, 'err');
+    }
+  },
+
+  async connectWebUSB() {
+    if (!navigator.usb) { this.addLog('WebUSB not supported in this browser', 'err'); return; }
+    this.$('alertWebApi').classList.add('show');
+    try {
+      const adapter = new WebUSBAdapter();
+      await adapter.connect(19200);
+      this._serial = adapter;
+      const name = adapter.deviceName || (adapter._dev && adapter._dev.productName) || 'USB device';
+      const chip = adapter.chipName || '?';
+      this.setConnected(true, `WebUSB: ${name} [${chip}]`);
+      this.addLog(`✓ WebUSB connected: ${name} (${chip}) @ 19200 baud`, 'ok');
+    } catch (e) {
+      this.$('alertWebApi').classList.remove('show');
+      this.addLog(`WebUSB connection failed: ${e.message}`, 'err');
+    }
+  },
+
+  async disconnect() {
+    if (this._serial) {
+      await this._serial.disconnect().catch(() => {});
+      this._serial = null;
+    }
+    this.setConnected(false, 'Disconnected');
+    this.$('alertWebApi').classList.remove('show');
+    this.addLog('Disconnected', 'warn');
+    this._updateFlashButton();
+  },
+
+  setConnected(connected, text) {
+    const dot = this.$('connDot');
+    const status = this.$('connStatusText');
+    dot.className = 'dot' + (connected ? ' ok' : '');
+    status.textContent = text;
+    this.$('btnDisconnect').disabled = !connected;
+    this.$('btnTestConn').disabled = !connected;
+    this._updateFlashButton();
+  },
+
+  async onFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    this.addLog(`Loading: ${file.name} (${file.size} bytes)…`, 'info');
+    try {
+      const raw = await file.arrayBuffer();
+      const data = await processFirmware(new Uint8Array(raw));
+      const info = getFirmwareInfo(data);
+      this._fwData = data;
+      this._fwType = info.type;
+      this._renderFwInfo(info, file.name);
+      this.addLog(`Firmware detected: ${info.type} (${data.length} bytes)`, info.type !== 'UNKNOWN' ? 'ok' : 'warn');
+    } catch (e) {
+      this.addLog(`Error loading firmware: ${e.message}`, 'err');
+    }
+    this._updateFlashButton();
+  },
+
+  _renderFwInfo(info, filename) {
+    const box = this.$('fwInfoBox');
+    const typeClass = info.type === 'UNKNOWN' ? 'unk' : 'ok';
+    let html = `
+      <span class="k">File</span><span class="v">${filename}</span>
+      <span class="k">Type</span><span class="v ${typeClass}">${info.type}</span>
+      <span class="k">Size</span><span class="v">${info.size} bytes (0x${info.size.toString(16).toUpperCase()})</span>
+    `;
+    if (info.protocol) html += `<span class="k">Protocol</span><span class="v">${info.protocol}</span>`;
+    if (info.signature) html += `<span class="k">Signature</span><span class="v">${info.signature}</span>`;
+    if (info.encryption) html += `<span class="k">Encryption</span><span class="v">${info.encryption}</span>`;
+    if (info.signingOffset) html += `<span class="k">Key offset</span><span class="v">${info.signingOffset}</span>`;
+    box.innerHTML = html;
+    box.style.display = 'grid';
+  },
+
+  _updateFlashButton() {
+    const sim = this.$('chkSim').checked;
+    const hasConn = sim || (this._serial && this._serial.connected);
+    const hasFw = this._fwData && this._fwType && this._fwType !== 'UNKNOWN';
+    this.$('btnFlash').disabled = !(hasConn && hasFw);
+  },
+
+  async testConnection() {
+    if (!this._fwData && !this.$('chkSim').checked) {
+      this.addLog('Load a firmware file first to detect the protocol for test connection', 'warn');
+      return;
+    }
+    const type = this._fwType || 'BRIGHTWAY';
+    const sim = this.$('chkSim').checked;
+    const debug = this.$('chkDebug').checked;
+    const serial = sim ? new SimulationSerial() : this._serial;
+    if (sim) await serial.connect();
+    this._abortCtrl = { aborted: false };
+
+    const opts = {
+      simulation: sim, debug,
+      onLog: (m, t) => this.addLog(m, t),
+      onStatus: s => this.setStatus(s),
+      onProgress: p => this.setProgress(p),
+      abortSignal: this._abortCtrl
+    };
+
+    try {
+      this.setFlashState('running');
+      if (type === 'BRIGHTWAY') {
+        const f = new BrightwayFlasher(serial, opts);
+        if (this._fwData) f.loadFirmware(this._fwData);
+        await f.testConnection();
+      } else if (type === 'LEQI') {
+        const f = new LeqiFlasher(serial, opts);
+        if (this._fwData) f.loadFirmware(this._fwData);
+        await f.testConnection();
+      }
+      this.addLog('✓ Connection test passed', 'ok');
+      this.setFlashState('done');
+    } catch (e) {
+      this.addLog(`Connection test failed: ${e.message}`, 'err');
+      this.setFlashState('error');
+    }
+  },
+
+  async startFlash() {
+    if (!this._fwData) { this.addLog('No firmware loaded', 'err'); return; }
+    const sim = this.$('chkSim').checked;
+    const debug = this.$('chkDebug').checked;
+    const serial = sim ? new SimulationSerial() : this._serial;
+    if (sim) await serial.connect();
+
+    this._abortCtrl = { aborted: false };
+    this.$('btnFlash').disabled = true;
+    this.$('btnAbort').disabled = false;
+
+    const opts = {
+      simulation: sim, debug,
+      onLog: (m, t) => this.addLog(m, t),
+      onStatus: s => this.setStatus(s),
+      onProgress: p => this.setProgress(p),
+      abortSignal: this._abortCtrl
+    };
+
+    this.setFlashState('running');
+    this.setStatus('Starting…');
+    this.setProgress(0);
+
+    try {
+      if (this._fwType === 'BRIGHTWAY') {
+        this.addLog('Starting Brightway DFU flash…', 'info');
+        const f = new BrightwayFlasher(serial, opts);
+        f.loadFirmware(this._fwData);
+        await f.run();
+      } else if (this._fwType === 'LEQI') {
+        this.addLog('Starting LEQI binary flash…', 'info');
+        const f = new LeqiFlasher(serial, opts);
+        f.loadFirmware(this._fwData);
+        await f.run();
+      } else {
+        throw new Error('Unknown firmware type');
+      }
+      this.addLog('🎉 Flash completed successfully!', 'ok');
+      this.setFlashState('done');
+    } catch (e) {
+      this.addLog(`❌ Flash error: ${e.message}`, 'err');
+      this.setFlashState('error');
+    } finally {
+      this.$('btnAbort').disabled = true;
+      this._updateFlashButton();
+    }
+  },
+
+  abortFlash() {
+    if (this._abortCtrl) this._abortCtrl.aborted = true;
+    this.addLog('Abort requested…', 'warn');
+    this.$('btnAbort').disabled = true;
+  },
+
+  addLog(msg, type = '') {
+    const el = this._logEl;
+    const now = new Date();
+    const ts = now.toTimeString().substring(0,8) + '.' + now.getMilliseconds().toString().padStart(3,'0');
+    const line = document.createElement('div');
+    line.className = 'line';
+    line.innerHTML = `<span class="ts">[${ts}]</span><span class="msg ${type}">${escHtml(msg)}</span>`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  },
+
+  setStatus(text) {
+    this.$('progressStatus').textContent = text;
+    // Match original: when debug=OFF, status messages go to log
+    // When debug=ON, they only show in status bar (as in Python's QStatusBar)
+    if (!this.$('chkDebug').checked) {
+      this.addLog(text, 'info');
+    }
+  },
+
+  setProgress(pct) {
+    const bar = this.$('progressBar');
+    const label = this.$('progressPct');
+    bar.style.width = pct + '%';
+    label.textContent = pct + '%';
+    if (pct > 0 && pct < 100) bar.classList.add('active');
+    else bar.classList.remove('active');
+  },
+
+  async _checkUpdate() {
+    try {
+      const r = await fetch('https://api.github.com/repos/scooterteam/bw-flasher/releases', {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }, signal: AbortSignal.timeout(5000)
+      });
+      if (!r.ok) return;
+      const releases = await r.json();
+      if (!releases || !releases[0]) return;
+      const latest = releases[0].tag_name.replace(/^v/, '');
+      const current = '0.6.0';
+      // Simple semver compare: split by . and compare numerically
+      const newer = latest.split('.').map(Number);
+      const cur   = current.split('.').map(Number);
+      let isNewer = false;
+      for (let i = 0; i < 3; i++) {
+        if ((newer[i]||0) > (cur[i]||0)) { isNewer = true; break; }
+        if ((newer[i]||0) < (cur[i]||0)) break;
+      }
+      if (isNewer) this._showUpdateBanner(latest, releases[0].html_url);
+    } catch (e) { /* network error, silently ignore */ }
+  },
+
+  _showUpdateBanner(version, url) {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(232,163,54,0.15);' +
+      'border-bottom:1px solid var(--amber-lo);padding:8px 16px;font-family:var(--font);font-size:11px;' +
+      'color:var(--amber);display:flex;align-items:center;gap:10px;z-index:1000';
+    banner.innerHTML = `⬆ BWFlasher v${version} is available! ` +
+      `<a href="${escHtml(url)}" target="_blank" style="color:var(--amber-hi)">Download on GitHub</a>` +
+      `<button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;` +
+      `color:var(--amber-lo);cursor:pointer;font-size:14px">✕</button>`;
+    document.body.prepend(banner);
+    this.addLog(`Update available: BWFlasher v${version} — ${url}`, 'warn');
+  },
+
+  setFlashState(state) {
+    const badge = this.$('flashStatus');
+    badge.className = 'status-badge';
+    switch (state) {
+      case 'running': badge.classList.add('running'); badge.textContent = '● FLASHING'; break;
+      case 'done':    badge.classList.add('done');    badge.textContent = '✓ DONE';    break;
+      case 'error':   badge.classList.add('error');   badge.textContent = '✕ ERROR';   break;
+      default:        badge.classList.add('idle');    badge.textContent = '● IDLE';    break;
+    }
+  }
+};
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.addEventListener('DOMContentLoaded', () => UI.init());
+</script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#0b0d0f;--bg1:#111418;--bg2:#191d22;--bg3:#22272e;
+  --border:#2d333b;--border-hi:#444c56;
+  --amber:#e8a336;--amber-lo:#b07a1a;--amber-hi:#f5c05a;
+  --green:#4fca6a;--red:#f47067;--blue:#6cb6ff;--muted:#768390;
+  --text:#cdd9e5;--text-lo:#7d8590;
+  --font:'JetBrains Mono',monospace;
+  --glow-amber:0 0 8px rgba(232,163,54,0.4);
+  --glow-green:0 0 8px rgba(79,202,106,0.4);
+}
+html,body{height:100%;background:var(--bg0);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.5}
+body{display:flex;flex-direction:column;min-height:100vh;max-width:960px;margin:0 auto;padding:0 12px}
+
+/* ── Header ── */
+header{display:flex;align-items:center;gap:12px;padding:16px 0 10px;border-bottom:1px solid var(--border)}
+.logo{font-size:18px;font-weight:700;color:var(--amber);letter-spacing:-0.5px;text-shadow:var(--glow-amber)}
+.logo span{color:var(--text-lo);font-weight:300}
+.ver-tag{font-size:10px;color:var(--text-lo);background:var(--bg3);padding:2px 7px;border-radius:3px;border:1px solid var(--border)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-lo)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);transition:all 0.3s}
+.dot.ok{background:var(--green);border-color:var(--green);box-shadow:var(--glow-green)}
+.dot.warn{background:var(--amber);border-color:var(--amber);box-shadow:var(--glow-amber)}
+.dot.err{background:var(--red);border-color:var(--red)}
+
+/* ── Panels ── */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 0}
+.panel{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:12px}
+.panel-wide{grid-column:1/-1}
+.panel-label{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--amber);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.panel-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Form controls ── */
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.field:last-child{margin-bottom:0}
+label{font-size:10px;color:var(--text-lo);letter-spacing:0.5px;text-transform:uppercase}
+input[type=text],input[type=file],select{
+  width:100%;background:var(--bg2);border:1px solid var(--border);
+  color:var(--text);font-family:var(--font);font-size:12px;
+  padding:6px 8px;border-radius:4px;outline:none;transition:border 0.2s
+}
+input[type=text]:focus,select:focus{border-color:var(--amber)}
+input[type=file]{cursor:pointer;padding:5px 8px}
+input[type=file]::file-selector-button{
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  font-family:var(--font);font-size:11px;padding:3px 8px;border-radius:3px;
+  cursor:pointer;margin-right:8px;transition:all 0.2s
+}
+input[type=file]::file-selector-button:hover{border-color:var(--amber);color:var(--amber)}
+
+.checkbox-row{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:4px 0}
+.checkbox-row input[type=checkbox]{
+  appearance:none;width:14px;height:14px;background:var(--bg2);
+  border:1px solid var(--border);border-radius:2px;cursor:pointer;
+  position:relative;transition:all 0.2s;flex-shrink:0
+}
+.checkbox-row input[type=checkbox]:checked{background:var(--amber);border-color:var(--amber)}
+.checkbox-row input[type=checkbox]:checked::after{
+  content:'✓';position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;color:#000;font-size:10px;font-weight:700
+}
+.checkbox-row span{font-size:12px;color:var(--text)}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  font-family:var(--font);font-size:12px;font-weight:500;
+  padding:7px 14px;border-radius:4px;cursor:pointer;transition:all 0.2s;
+  text-transform:uppercase;letter-spacing:0.5px
+}
+.btn:hover{border-color:var(--amber);color:var(--amber)}
+.btn:active{background:var(--bg0)}
+.btn:disabled{opacity:0.35;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:rgba(232,163,54,0.12);border-color:var(--amber);color:var(--amber)}
+.btn-primary:hover{background:rgba(232,163,54,0.2);box-shadow:var(--glow-amber)}
+.btn-danger{background:rgba(244,112,103,0.1);border-color:var(--red);color:var(--red)}
+.btn-danger:hover{background:rgba(244,112,103,0.2)}
+.btn-success{background:rgba(79,202,106,0.1);border-color:var(--green);color:var(--green)}
+.btn-success:hover{background:rgba(79,202,106,0.2)}
+.btn-sm{font-size:11px;padding:5px 10px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── Connection area ── */
+.conn-status{display:flex;align-items:center;gap:8px;padding:8px 10px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:4px;
+  font-size:11px;color:var(--text-lo);margin-bottom:10px}
+.conn-status .dot{flex-shrink:0}
+#connStatusText{flex:1}
+
+/* ── Firmware info ── */
+.fw-info{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;
+  font-size:11px;background:var(--bg2);padding:8px 10px;border-radius:4px;margin-top:8px}
+.fw-info .k{color:var(--text-lo)}
+.fw-info .v{color:var(--amber);font-weight:500}
+.fw-info .v.ok{color:var(--green)}
+.fw-info .v.unk{color:var(--red)}
+
+/* ── Progress ── */
+.progress-wrap{grid-column:1/-1;margin-top:4px}
+.progress-bar-outer{height:18px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:3px;overflow:hidden;position:relative}
+.progress-bar-inner{height:100%;background:linear-gradient(90deg,var(--amber-lo),var(--amber));
+  width:0%;transition:width 0.3s ease;position:relative}
+.progress-bar-inner::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+  animation:shimmer 1.5s infinite;display:none
+}
+.progress-bar-inner.active::after{display:block}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;
+  color:var(--text-lo);margin-bottom:4px}
+#progressPct{color:var(--amber);font-weight:500}
+
+/* ── Log ── */
+.log-wrap{grid-column:1/-1;margin-top:4px}
+#log{
+  height:240px;background:var(--bg0);border:1px solid var(--border);
+  border-radius:4px;padding:10px;overflow-y:auto;font-size:11px;
+  line-height:1.6;position:relative
+}
+#log .line{display:flex;gap:6px}
+#log .ts{color:var(--text-lo);flex-shrink:0;user-select:none;font-size:10px}
+#log .msg{word-break:break-all}
+#log .msg.ok{color:var(--green)}
+#log .msg.err{color:var(--red)}
+#log .msg.warn{color:var(--amber)}
+#log .msg.info{color:var(--blue)}
+#log .msg.dbg{color:var(--text-lo);font-size:10px}
+#log .msg.tx{color:#9e7cb0}
+#log .msg.rx{color:#5b99c9}
+#log::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 24px,rgba(255,255,255,0.012) 24px,rgba(255,255,255,0.012) 25px)}
+.log-ctrl{display:flex;justify-content:flex-end;margin-bottom:6px}
+
+/* ── Status badge ── */
+.status-badge{display:inline-flex;align-items:center;gap:5px;
+  padding:3px 8px;border-radius:3px;font-size:10px;font-weight:600;
+  letter-spacing:0.5px;text-transform:uppercase}
+.status-badge.idle{background:rgba(45,51,59,0.8);color:var(--text-lo);border:1px solid var(--border)}
+.status-badge.running{background:rgba(232,163,54,0.15);color:var(--amber);border:1px solid var(--amber-lo)}
+.status-badge.done{background:rgba(79,202,106,0.12);color:var(--green);border:1px solid #2a6b39}
+.status-badge.error{background:rgba(244,112,103,0.12);color:var(--red);border:1px solid #7a3530}
+
+/* ── Section divider ── */
+.section-row{display:flex;align-items:center;gap:10px;grid-column:1/-1;padding:6px 0 0}
+.section-row h3{font-size:10px;font-weight:700;color:var(--text-lo);text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+.section-row hr{flex:1;border:none;border-top:1px solid var(--border)}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg0)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-hi)}
+
+/* ── Alert ── */
+.alert{padding:8px 12px;border-radius:4px;font-size:11px;grid-column:1/-1;margin-top:4px;display:none}
+.alert.warn{background:rgba(232,163,54,0.1);border:1px solid var(--amber-lo);color:var(--amber)}
+.alert.info{background:rgba(108,182,255,0.08);border:1px solid #3a6a9e;color:var(--blue)}
+.alert.show{display:block}
+
+footer{margin-top:auto;padding:12px 0;font-size:10px;color:var(--text-lo);
+  border-top:1px solid var(--border);display:flex;justify-content:space-between}
+footer a{color:var(--amber-lo);text-decoration:none}
+footer a:hover{color:var(--amber)}
+
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr}
+  .panel-wide,.progress-wrap,.log-wrap,.section-row,.alert{grid-column:1}
+}
+
+/* ── CRT effects ── */
+body::before {
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:9998;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.18) 2px,
+    rgba(0,0,0,0.18) 4px
+  );
+}
+body::after {
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:9997;
+  background:radial-gradient(ellipse at center,
+    transparent 60%,
+    rgba(0,0,0,0.55) 100%
+  );
+}
+/* Moving phosphor scanline */
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+#crtScanline {
+  position:fixed;left:0;right:0;height:3px;
+  background:linear-gradient(transparent, rgba(180,255,220,0.07), transparent);
+  pointer-events:none;z-index:9997;
+  animation:scanline 6s linear infinite;
+}
+/* Subtle flicker */
+@keyframes flicker {
+  0%,100%{opacity:1} 92%{opacity:1} 93%{opacity:0.96} 94%{opacity:1} 97%{opacity:0.98}
+}
+body { animation: flicker 8s infinite; }
+
+/* Knight Rider banner */
+.logo { position:relative; overflow:hidden; }
+@keyframes knightRider {
+  0%   { left:-40%; }
+  50%  { left:120%; }
+  50.001% { left:120%; }
+  100% { left:-40%; }
+}
+.logo::after {
+  content:'';
+  position:absolute;top:0;bottom:0;width:40%;
+  background:linear-gradient(90deg,transparent,rgba(232,163,54,0.35),transparent);
+  animation:knightRider 3s ease-in-out infinite;
+  pointer-events:none;
+}
